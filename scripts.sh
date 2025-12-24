@@ -20,7 +20,7 @@ sleep 30
 # Database backup script
 sudo nano /usr/local/bin/backup_db.sh
 
-
+# Copy the following content into backup_db.sh
 #!/bin/bash
 set -euo pipefail
 
@@ -52,6 +52,9 @@ gzip -f "$BACKUP_FILE"
 # Optional: rotate backups older than 14 days
 find "$BACKUP_DIR" -type f -name "${DB_NAME}_*.sql.gz" -mtime +14 -delete
 
+# Until here, then save and exit the editor
+
+
 # make script executable
 sudo chmod +x /usr/local/bin/backup_db.sh
 
@@ -59,15 +62,23 @@ sudo chmod +x /usr/local/bin/backup_db.sh
 
 sudo mkdir -p /etc/monitoring
 sudo nano /etc/monitoring/discord.env
-sudo chmod 600 /etc/monitoring/discord.env
+
+
+# Paste the following content into discord.env
 
 DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/1453318183107821702/HSkXiH8FiFhAJmB5x98OZ0-bOvYTcZDntLK-Cv-MbixaI0Z9acn5_1hMyorcSceCdbh8"
 HOSTNAME_TAG="$(hostname)"
 
+# Until here, then save and exit the editor
+
+# set permissions
+sudo chmod 600 /etc/monitoring/discord.env
+
+
 # Post Discord message script
 sudo mkdir -p /usr/local/bin/monitoring
 sudo nano /usr/local/bin/monitoring/notify_discord.sh
-sudo chmod +x /usr/local/bin/monitoring/notify_discord.sh
+
 
 #!/bin/bash
 set -euo pipefail
@@ -97,12 +108,18 @@ curl -sS -X POST \
   -d "$payload" \
   "$DISCORD_WEBHOOK_URL" >/dev/null
 
+# Until here, then save and exit the editor
+
+# make script executable
+sudo chmod +x /usr/local/bin/monitoring/notify_discord.sh
+
 # Test Discord notification
 sudo /usr/local/bin/monitoring/notify_discord.sh "Test" "Discord webhook is working."
 
 # Disk usage monitoring script
 sudo nano /usr/local/bin/monitoring/check_disk.sh
-sudo chmod +x /usr/local/bin/monitoring/check_disk.sh
+
+# Copy the following content into check_disk.sh
 
 #!/bin/bash
 set -euo pipefail
@@ -124,9 +141,15 @@ if (( USED >= THRESHOLD_PERCENT )); then
     "Mount: $MOUNTPOINT\n$DETAILS"
 fi
 
+# Until here, then save and exit the editor
+
+# make script executable
+sudo chmod +x /usr/local/bin/monitoring/check_disk.sh
+
 # CPU / load monitoring script
 sudo nano /usr/local/bin/monitoring/check_cpu_load.sh
-sudo chmod +x /usr/local/bin/monitoring/check_cpu_load.sh
+
+# Copy the following content into check_cpu_load.sh
 
 #!/bin/bash
 set -euo pipefail
@@ -150,10 +173,17 @@ if [[ "$ALERT" -eq 1 ]]; then
     "Top processes:\n$TOP"
 fi
 
+# Until here, then save and exit the editor
+
+# make script executable
+sudo chmod +x /usr/local/bin/monitoring/check_cpu_load.sh
+
+
 # SSH suspicious behavior monitoring script
 
 sudo nano /usr/local/bin/monitoring/check_ssh_auth.sh
-sudo chmod +x /usr/local/bin/monitoring/check_ssh_auth.sh
+
+# Copy the following content into check_ssh_auth.sh
 
 #!/bin/bash
 set -euo pipefail
@@ -188,7 +218,12 @@ if (( COUNT >= FAILED_THRESHOLD )); then
     "Sample events:\n$SAMPLE"
 fi
 
+# Until here, then save and exit the editor
 
+# make script executable
+sudo chmod +x /usr/local/bin/monitoring/check_ssh_auth.sh
+
+# Set up cron jobs
 sudo crontab -e
 
 # Disk usage every 5 minutes
@@ -202,7 +237,6 @@ sudo crontab -e
 
 
 # Test CPU load alert
-
 sudo apt update
 sudo apt install -y stress
 stress --cpu $(nproc) --timeout 120
