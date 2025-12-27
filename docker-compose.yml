@@ -29,10 +29,10 @@ services:
     restart: unless-stopped
     # These labels/env vars are how nginx-proxy + acme-companion discovers your app
     environment:
-      - VIRTUAL_HOST=api.vty.life
+      - VIRTUAL_HOST=api.theebs.cloud
       - VIRTUAL_PORT=8000
-      - LETSENCRYPT_HOST=api.vty.life
-      - LETSENCRYPT_EMAIL=servicevg06@gmail.com
+      - LETSENCRYPT_HOST=api.theebs.cloud
+      - LETSENCRYPT_EMAIL=theebs.m@gmail.com
 
   nginx-proxy:
     image: nginxproxy/nginx-proxy:alpine
