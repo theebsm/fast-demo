@@ -85,7 +85,7 @@ crontab -e
 */2 * * * * WINDOW_MINUTES=5 FAILED_THRESHOLD=1 sudo /usr/local/bin/monitoring/check_ssh_auth.sh
 
 # Database backup every 2 minutes 
-*/5 * * * * /usr/local/bin/backup_db.sh
+*/2 * * * * /usr/local/bin/backup_db.sh
 
 
 
