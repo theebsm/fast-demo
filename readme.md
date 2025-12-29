@@ -16,17 +16,20 @@ A complete FastAPI application with PostgreSQL database, nginx-proxy, and automa
 ### Local Development
 
 1. **Clone the repository:**
+
    ```bash
    git clone https://github.com/varadhan06/fast-demo.git
    cd fast-demo
    ```
 
 2. **Start the application:**
+
    ```bash
    docker compose up -d
    ```
 
 3. **Initialize the database:**
+
    ```bash
    docker compose exec backend python setup.py
    ```
@@ -49,7 +52,7 @@ sudo apt install docker-compose-plugin -y
 sudo apt install git -y
 
 # Clone and start the application
-cd /home/ubuntu/
+cd /home/$(whoami)/
 git clone https://github.com/varadhan06/fast-demo.git
 cd fast-demo
 docker compose up -d
@@ -57,12 +60,12 @@ sleep 30
 docker compose exec backend python setup.py
 
 # Setup automated backups
-mkdir -p /home/ubuntu/backups
-chmod 700 /home/ubuntu/backups
+mkdir -p /home/$(whoami)/backups
+chmod 700 /home/$(whoami)/backups
 
-cat > /home/ubuntu/backup-db.sh << 'EOF'
+cat > /home/$(whoami)/backup-db.sh << 'EOF'
 #!/bin/bash
-BACKUP_DIR="/home/ubuntu/backups"
+BACKUP_DIR="/home/$(whoami)/backups"
 CONTAINER_NAME="demo_1_db"
 DB_NAME="devops_docker_demo_1"
 DB_USER="postgres"
@@ -74,8 +77,29 @@ gzip $BACKUP_FILE
 find $BACKUP_DIR -name "*.sql.gz" -mtime +7 -delete
 EOF
 
-chmod +x /home/ubuntu/backup-db.sh
-echo "0 2 * * * /home/ubuntu/backup-db.sh" | crontab -
+chmod +x /home/$(whoami)/backup-db.sh
+echo "0 2 * * * /home/$(whoami)/backup-db.sh" | crontab -
+
+# Setup SSH monitoring with Discord notifications
+cd /home/$(whoami)/fast-demo/scripts
+chmod +x setup_ssh_monitoring.sh
+
+# Create Discord config (replace with your webhook URL)
+mkdir -p /etc/monitoring
+cat > /etc/monitoring/discord.env << 'EOF'
+DISCORD_WEBHOOK_URL="YOUR_DISCORD_WEBHOOK_URL_HERE"
+HOSTNAME_TAG="Production-EC2"
+EOF
+chmod 600 /etc/monitoring/discord.env
+
+# Install SSH monitoring
+mkdir -p /usr/local/bin/monitoring
+cp check_ssh_auth.sh notify_discord.sh /usr/local/bin/monitoring/
+chmod +x /usr/local/bin/monitoring/*.sh
+cp ssh-monitor.service ssh-monitor.timer /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable ssh-monitor.timer
+systemctl start ssh-monitor.timer
 ```
 
 ## API Endpoints
@@ -114,22 +138,66 @@ docker compose exec backend supervisorctl restart fastapi
 docker compose exec backend cat /var/log/supervisor/fastapi.out.log
 ```
 
+## SSH Security Monitoring
+
+The application includes automated SSH monitoring that sends Discord notifications for:
+
+- **Failed password attempts** (brute force detection)
+- **SSH key authentication failures** (invalid key attempts)
+- **Successful logins** (awareness notifications)
+
+### Setup SSH Monitoring
+
+1. **Get Discord Webhook URL:**
+
+   - Go to your Discord server settings
+   - Create a webhook in the desired channel
+   - Copy the webhook URL
+
+2. **Run setup script:**
+
+   ```bash
+   cd /home/$(whoami)/fast-demo/scripts
+   sudo ./setup_ssh_monitoring.sh
+   ```
+
+3. **Monitor status:**
+
+   ```bash
+   # Check if monitoring is running
+   sudo systemctl status ssh-monitor.timer
+
+   # View recent alerts
+   sudo journalctl -u ssh-monitor.service -f
+
+   # Test notification
+   sudo /usr/local/bin/monitoring/notify_discord.sh "Test" "SSH monitoring active"
+   ```
+
+### Configuration
+
+- **Check interval:** Every 2 minutes
+- **Alert threshold:** 3+ failed attempts in 5 minutes
+- **Log location:** `/var/log/auth.log` ($(whoami))
+- **Config file:** `/etc/monitoring/discord.env`
+
 ## Database Backups
 
 Automated daily backups at 2 AM:
-- Location: `/home/ubuntu/backups/`
+
+- Location: `/home/$(whoami)/backups/`
 - Retention: 7 days
 - Format: Compressed SQL dumps
 
 ## Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `DATABASE` | Database name | `devops_docker_demo_1` |
-| `PASSWORD` | Database password | `postgres123` |
-| `DB_HOST` | Database host | `db` |
-| `DB_PORT` | Database port | `5432` |
-| `VIRTUAL_HOST` | Domain for nginx-proxy | `api.vty.life` |
+| Variable            | Description                | Default                 |
+| ------------------- | -------------------------- | ----------------------- |
+| `DATABASE`          | Database name              | `devops_docker_demo_1`  |
+| `PASSWORD`          | Database password          | `postgres123`           |
+| `DB_HOST`           | Database host              | `db`                    |
+| `DB_PORT`           | Database port              | `5432`                  |
+| `VIRTUAL_HOST`      | Domain for nginx-proxy     | `api.vty.life`          |
 | `LETSENCRYPT_EMAIL` | Email for SSL certificates | `servicevg06@gmail.com` |
 
 ## Development
@@ -152,11 +220,13 @@ docker compose exec db psql -U postgres -d devops_docker_demo_1
 ## Troubleshooting
 
 ### Check Container Status
+
 ```bash
 docker compose ps
 ```
 
 ### View Logs
+
 ```bash
 docker compose logs backend
 docker compose logs db
@@ -164,9 +234,18 @@ docker compose logs nginx-proxy
 ```
 
 ### Test Database Connection
+
 ```bash
 docker compose exec backend python -c "from setup import get_connection; print('DB OK' if get_connection() else 'DB Error')"
 ```
+
+### To create ssh user.
+
+cd scripts
+
+chmod +x create_ssh_user.sh
+
+sudo ./create_ssh_user.sh YOURUSERNAME "YOUR PUBLIC KEY"
 
 ## Security Notes
 
