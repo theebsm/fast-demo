@@ -7,21 +7,21 @@ sudo apt install docker-compose-plugin -y
 sudo apt install git -y
 
 # Clone the repository
-cd /home/ubuntu/
+cd /home/$(whoami)/
 git clone https://github.com/varadhan06/fast-demo.git
 cd fast-demo
 
 # Start the containers
-docker compose up -d
+sudo docker compose up -d
 
 # Wait for containers to be ready
 sleep 30
 
 # Initialize the database
-docker compose exec backend python setup.py
+sudo docker compose exec backend python setup.py
 
 # Database backup script
-sudo cp /home/ubuntu/fast-demo/scripts/backup_db.sh /usr/local/bin/backup_db.sh
+sudo cp /home/$(whoami)/fast-demo/scripts/backup_db.sh /usr/local/bin/backup_db.sh
 
 
 # make script executable
@@ -41,12 +41,12 @@ HOSTNAME_TAG="$(hostname)"
 # Until here, then save and exit the editor
 
 # set permissions
-sudo chmod 600 /etc/monitoring/discord.env
+sudo chmod 644 /etc/monitoring/discord.env
 
 
 # Post Discord message script
 sudo mkdir -p /usr/local/bin/monitoring
-cp /home/ubuntu/fast-demo/scripts/notify_discord.sh /usr/local/bin/monitoring/notify_discord.sh
+sudo cp /home/$(whoami)/fast-demo/scripts/notify_discord.sh /usr/local/bin/monitoring/notify_discord.sh
 
 # make script executable
 sudo chmod +x /usr/local/bin/monitoring/notify_discord.sh
@@ -55,34 +55,38 @@ sudo chmod +x /usr/local/bin/monitoring/notify_discord.sh
 sudo /usr/local/bin/monitoring/notify_discord.sh "Test" "Discord webhook is working."
 
 # Disk usage monitoring script
-sudo cp /home/ubuntu/fast-demo/scripts/check_disk.sh /usr/local/bin/monitoring/check_disk.sh
+sudo cp /home/$(whoami)/fast-demo/scripts/check_disk.sh /usr/local/bin/monitoring/check_disk.sh
 
 # make script executable
 sudo chmod +x /usr/local/bin/monitoring/check_disk.sh
 
 # CPU / load monitoring script
-sudo cp /home/ubuntu/fast-demo/scripts/check_cpu_load.sh /usr/local/bin/monitoring/check_cpu_load.sh
+sudo cp /home/$(whoami)/fast-demo/scripts/check_cpu_load.sh /usr/local/bin/monitoring/check_cpu_load.sh
 
 # make script executable
 sudo chmod +x /usr/local/bin/monitoring/check_cpu_load.sh
 
 # SSH suspicious behavior monitoring script
-sudo cp /home/ubuntu/fast-demo/scripts/check_ssh_auth.sh /usr/local/bin/monitoring/check_ssh_auth.sh
+sudo cp /home/$(whoami)/fast-demo/scripts/check_ssh_auth.sh /usr/local/bin/monitoring/check_ssh_auth.sh
 
 # make script executable
 sudo chmod +x /usr/local/bin/monitoring/check_ssh_auth.sh
 
-# Set up cron jobs
-sudo crontab -e
+# Set up cron jobs for current user
+crontab -e
 
-# Disk usage every 5 minutes
-*/5 * * * * THRESHOLD_PERCENT=85 MOUNTPOINT=/ /usr/local/bin/monitoring/check_disk.sh
+# Disk usage every 2 minutes
+*/2 * * * * THRESHOLD_PERCENT=85 MOUNTPOINT=/ /usr/local/bin/monitoring/check_disk.sh
 
-# CPU/load every 2 minutes
-*/2 * * * * LOAD_PER_CORE_THRESHOLD=0.20 /usr/local/bin/monitoring/check_cpu_load.sh
+# CPU/load every 2 minutes  
+*/2 * * * * LOAD_PER_CORE_THRESHOLD=0.02 /usr/local/bin/monitoring/check_cpu_load.sh
 
-# SSH failures every 5 minutes (10-minute window)
-*/5 * * * * WINDOW_MINUTES=10 FAILED_THRESHOLD=10 /usr/local/bin/monitoring/check_ssh_auth.sh
+# SSH monitoring every 2 minutes
+*/2 * * * * WINDOW_MINUTES=5 FAILED_THRESHOLD=1 sudo /usr/local/bin/monitoring/check_ssh_auth.sh
+
+# Database backup every 2 minutes 
+*/5 * * * * /usr/local/bin/backup_db.sh
+
 
 
 # Test CPU load alert
