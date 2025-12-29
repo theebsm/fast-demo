@@ -39,7 +39,9 @@ docker compose logs -f backend
 ### Testing invalid ssh login alerts
 
 ssh -i fake1 theebs@"InstanceIP"
+
 ssh -i fake2 theebs@"InstanceIP"
+
 ssh -i fake3 theebs@"InstanceIP"
 
 ### Check backup 
