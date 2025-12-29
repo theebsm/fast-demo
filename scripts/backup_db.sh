@@ -24,7 +24,6 @@ done
 
 # Dump and compress
 docker exec -t "$CONTAINER_NAME" pg_dump -U "$DB_USER" -d "$DB_NAME" > "$BACKUP_FILE"
-gzip -f "$BACKUP_FILE"
 
 # Optional: rotate backups older than 14 days
 find "$BACKUP_DIR" -type f -name "${DB_NAME}_*.sql.gz" -mtime +14 -delete
